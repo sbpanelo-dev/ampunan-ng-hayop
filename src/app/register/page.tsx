@@ -1,21 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react"; // ✅ Added useEffect
+
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+
 
 export default function LoginPage() {
   const [isRegister, setIsRegister] = useState(false);
   const [role, setRole] = useState<"user" | "admin">("user");
   const [loading, setLoading] = useState(false);
-  const [alert, setAlert] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const router = useRouter();
+
 
   const [name, setName] = useState("");
   const [username, setUsername] = useState("admin3");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("123");
-
 
 
   const resetFields = () => {
@@ -24,93 +27,119 @@ export default function LoginPage() {
     setEmail("");
     setPassword("123");
     setRole("user");
+    setError("");
+    setSuccess("");
   };
 
-const showAlert = (message: string, isSuccess: boolean) => {
-  setAlert({ message, type: isSuccess ? 'success' : 'error' });
-};
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-
-  setAlert(null);    // ✅ NEW
-  setLoading(true);  // ✅ Keep
-
-  try {
-    const body = isRegister
-      ? { name: name.trim(), username: username.trim(), email: email.trim(), password: password.trim(), role }
-      : { username: username.trim(), password: password.trim() };
-
-    const endpoint = isRegister ? 'register' : 'login';
-    console.log("📡 API CALL:", endpoint, body);
-    
-    const res = await fetch(`https://streetpaws-4.onrender.com/auth/${endpoint}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify(body)
-    });
-
-    console.log("📡 RESPONSE:", res.status, res.ok);
-
-const data = await res.json().catch(() => ({}));
-console.log("📦 RESPONSE DATA:", data);
-
-// ✅ Treat "success" message as success EVEN if status is bad
-if (!res.ok && !data.message?.toLowerCase().includes("success")) {
-  console.log("❌ ERROR DATA:", data);
-  showAlert(data.message || `HTTP ${res.status}`, false);
-  setLoading(false);
-  return;
-}
-
-console.log("✅ SUCCESS DATA:", data);
-    
-    const token = data.access_token || data.token;
-    if (token) {
-      localStorage.setItem("token", token);
-      const userData = {
-        username: data.user?.username || username.trim(),
-        role: data.user?.role || role || "User",
-        user_id: data.user?.user_id || data.user?.id
-      };
-      localStorage.setItem("streetpaws_user", JSON.stringify(userData));
-      
-      console.log("✅ SAVED TOKEN + USER");
-      showAlert(`✅ Welcome ${userData.username}! (${userData.role})`, true);
-      setLoading(false);
-      
-if (!isRegister) {
-  const currentUser = JSON.parse(localStorage.getItem("streetpaws_user") || '{}');
-
-  if (currentUser.role?.toLowerCase().includes("admin")) {
-    router.push("/userdashboard");
-  } else {
-    router.push("/admindashboard");
-  }
-} else {
-  resetFields();
-  setIsRegister(false);
-  setLoading(false);
-  showAlert("Account created! Please sign in.", true);
-}
-      return;
+  const showAlert = (message: string, isSuccess: boolean) => {
+    if (isSuccess) {
+      setSuccess(message);
+      setError("");
+    } else {
+      setError(message);
+      setSuccess("");
     }
+  };
 
-    console.log("⚠️ NO TOKEN");
-    showAlert(data.message || data.error || "Login failed", false);
-    setLoading(false);
-    
-  } catch (err: any) {
-    console.error("💥 NETWORK ERROR:", err);
-    showAlert("Network error", false);
-    setLoading(false);
-  }
-};
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+
+    try {
+      const body = isRegister
+        ? {
+            name: name.trim(),
+            username: username.trim(),
+            email: email.trim(),
+            password: password.trim(),
+            role: role
+          }
+        : {
+            username: username.trim(),
+            password: password.trim()
+          };
+
+
+      const endpoint = isRegister ? 'register' : 'login';
+      const res = await fetch(
+        `https://streetpaws-4.onrender.com/auth/${endpoint}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify(body)
+        }
+      );
+
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        showAlert(errorData.message || `HTTP ${res.status}`, false);
+        setLoading(false);
+        return;
+      }
+
+
+      const data = await res.json();
+     
+      const token = data.access_token || data.token;
+      if (token) {
+        localStorage.setItem("token", token);
+       
+        const userData = {
+          username: data.user?.username || username.trim(),
+          role: data.user?.role || role || "User",
+          user_id: data.user?.user_id || data.user?.id
+        };
+       
+        localStorage.setItem("streetpaws_user", JSON.stringify(userData));
+       
+        console.log("✅ SAVED:", { token: token.slice(0, 20) + "...", user: userData });
+       
+        showAlert(`✅ Welcome ${userData.username}! (${userData.role})`, true);
+       
+        // FIXED: Correct redirect logic
+        if (!isRegister) {
+          const savedUser = localStorage.getItem("streetpaws_user");
+          const currentUser = savedUser ? JSON.parse(savedUser) : userData;
+          // Admin goes to admin dashboard, user goes to user dashboard
+          if (currentUser.role?.toLowerCase().includes("admin")) {
+            router.push("/userdashboard"); // FIXED: Admin to admin dashboard
+          } else {
+            router.push("/admindashboard");   // FIXED: User to user dashboard
+          }
+        } else {
+          setIsRegister(false);
+          resetFields();
+          showAlert("✅ Account created! Please sign in.", true);
+        }
+        return;
+      }
+
+
+      showAlert(data.message || data.error || "Login failed", false);
+     
+    } catch (err: any) {
+      console.error("Error:", err);
+      showAlert("Network error", false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   return (
+   
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl bg-white rounded-3xl shadow-3xl p-10 lg:p-12 space-y-8 border border-emerald-100/50 backdrop-blur-xl">
-        
+       
         {/* Header */}
         <Link href="/" className="flex items-center space-x-4 group hover:scale-105 transition-all">
           <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl shadow-xl flex items-center justify-center animate-[glow_4s_ease-in-out_infinite]">
@@ -128,14 +157,15 @@ if (!isRegister) {
           <p className="text-2xl text-emerald-600 font-bold drop-shadow-lg">Choose Your Role</p>
         </div>
 
+
         {/* Role Selection Cards */}
         <div className="grid md:grid-cols-2 gap-6 mb-8 p-6 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-3xl border-4 border-white/30 shadow-xl">
           <button
             type="button"
             onClick={() => setRole("user")}
             className={`group relative p-8 rounded-3xl shadow-2xl border-4 border-transparent hover:shadow-3xl hover:-translate-y-2 hover:scale-105 transition-all duration-500 overflow-hidden cursor-pointer backdrop-blur-xl ${
-              role === "user" 
-                ? "bg-gradient-to-br from-blue-400/20 to-cyan-400/20 border-blue-300 shadow-blue-300/50" 
+              role === "user"
+                ? "bg-gradient-to-br from-blue-400/20 to-cyan-400/20 border-blue-300 shadow-blue-300/50"
                 : "bg-white/80 hover:border-emerald-300 hover:bg-gradient-to-br hover:from-blue-50 hover:to-cyan-50"
             }`}
           >
@@ -149,12 +179,13 @@ if (!isRegister) {
             </h3>
           </button>
 
+
           <button
             type="button"
             onClick={() => setRole("admin")}
             className={`group relative p-8 rounded-3xl shadow-2xl border-4 border-transparent hover:shadow-3xl hover:-translate-y-2 hover:scale-105 transition-all duration-500 overflow-hidden cursor-pointer backdrop-blur-xl ${
-              role === "admin" 
-                ? "bg-gradient-to-br from-orange-400/20 to-amber-400/20 border-orange-300 shadow-orange-300/50" 
+              role === "admin"
+                ? "bg-gradient-to-br from-orange-400/20 to-amber-400/20 border-orange-300 shadow-orange-300/50"
                 : "bg-white/80 hover:border-emerald-300 hover:bg-gradient-to-br hover:from-orange-50 hover:to-amber-50"
             }`}
           >
@@ -169,6 +200,7 @@ if (!isRegister) {
           </button>
         </div>
 
+
         {/* Toggle Buttons */}
         <div className="grid grid-cols-2 gap-2 bg-gradient-to-r from-gray-100 to-gray-200 p-1 rounded-2xl shadow-inner">
           <button
@@ -176,7 +208,7 @@ if (!isRegister) {
             onClick={() => setIsRegister(false)}
             className={`py-4 px-4 font-bold text-sm rounded-xl transition-all shadow-sm ${
               !isRegister
-                ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md" 
+                ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md"
                 : "text-gray-700 hover:bg-white hover:shadow-md"
             }`}
           >
@@ -187,13 +219,14 @@ if (!isRegister) {
             onClick={() => setIsRegister(true)}
             className={`py-4 px-4 font-bold text-sm rounded-xl transition-all shadow-sm ${
               isRegister
-                ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md" 
+                ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md"
                 : "text-gray-700 hover:bg-white hover:shadow-md"
             }`}
           >
             Sign Up
           </button>
         </div>
+
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {isRegister && (
@@ -212,6 +245,7 @@ if (!isRegister) {
             </div>
           )}
 
+
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-3 bg-gradient-to-r from-gray-100 to-gray-200 px-4 py-2 rounded-xl inline-block">
               Username <span className="text-red-500">*</span>
@@ -225,6 +259,7 @@ if (!isRegister) {
               disabled={loading}
             />
           </div>
+
 
           {isRegister && (
             <div>
@@ -242,6 +277,7 @@ if (!isRegister) {
             </div>
           )}
 
+
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-3 bg-gradient-to-r from-gray-100 to-gray-200 px-4 py-2 rounded-xl inline-block">
               Password <span className="text-red-500">*</span>
@@ -256,18 +292,24 @@ if (!isRegister) {
             />
           </div>
 
-          {/* ✅ FIXED: Success Alert - GREEN */}
-{alert && (
-  <div
-    className={`p-4 rounded-2xl text-white font-semibold shadow-lg ${
-      alert.type === "success"
-        ? "bg-green-500"
-        : "bg-red-500"
-    }`}
-  >
-    {alert.type === "success" ? "✅" : "❌"} {alert.message}
-  </div>
-)}
+
+          {/* ✅ FIXED: Success Alert - Green */}
+          {success && (
+            <div className="p-6 bg-rose-50 border-2 border-rose-200 rounded-3xl text-rose-700 text-lg font-semibold shadow-xl animate-pulse flex items-center space-x-3">
+              <span className="text-2xl">❌</span>
+              <span>{success}</span>
+            </div>
+          )}
+
+
+          {/* ✅ FIXED: Error Alert - Red */}
+          {error && (
+            <div className="p-6 green-50 border-2 border-green-200 rounded-3xl text-green-700 text-lg font-semibold shadow-xl animate-pulse flex items-center space-x-3">
+              <span className="text-2xl">✅</span>
+              <span>{error}</span>
+            </div>
+          )}
+
 
           <button
             type="submit"
@@ -288,10 +330,11 @@ if (!isRegister) {
           </button>
         </form>
 
+
         <div className="text-center space-y-4 pt-8 border-t border-gray-100">
           <p className="text-sm text-gray-500">Forgot password? Contact admin@nagapaws.com</p>
-          <Link 
-            href="/" 
+          <Link
+            href="/"
             className="block w-full bg-gradient-to-r from-gray-500 to-gray-600 text-white py-4 px-8 rounded-3xl font-bold text-lg shadow-xl hover:shadow-2xl hover:from-gray-600 hover:to-gray-700 transition-all hover:scale-105 transform"
           >
             ← Back to Home
@@ -301,3 +344,4 @@ if (!isRegister) {
     </div>
   );
 }
+
