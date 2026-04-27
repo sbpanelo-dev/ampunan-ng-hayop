@@ -33,7 +33,7 @@ const showAlert = (message: string, isSuccess: boolean) => {
 
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
-  
+
   setAlert(null);    // ✅ NEW
   setLoading(true);  // ✅ Keep
 
@@ -256,13 +256,10 @@ const handleSubmit = async (e: React.FormEvent) => {
           </div>
 
           {/* ✅ FIXED: Success Alert - GREEN */}
-        {alert && (
-  <div className={`p-6 rounded-3xl text-lg font-semibold shadow-xl animate-pulse flex items-center space-x-3 border-2 ${
-    alert.type === 'success' 
-      ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
-      : 'bg-rose-50 border-rose-200 text-rose-700'
-  }`}>
-    <span className="text-2xl">{alert.type === 'success' ? '✅' : '❌'}</span>
+{alert && (
+  <div className={`p-6 rounded-3xl ...`}>
+    <span>🔥DEBUG-{alert.type}-🔥 | </span>  {/* ← ADD THIS */}
+    <span>{alert.type === 'success' ? '✅' : '❌'}</span>
     <span>{alert.message}</span>
   </div>
 )}
