@@ -48,11 +48,13 @@ export default function LoginPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    setSuccess("");
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  // ✅ Clear states FIRST, then loading
+  setError("");
+  setSuccess("");
+  setLoading(true);
 
     try {
       const body = isRegister
