@@ -52,16 +52,18 @@ const handleSubmit = async (e: React.FormEvent) => {
 
     console.log("📡 RESPONSE:", res.status, res.ok);
 
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      console.log("❌ ERROR DATA:", errorData);
-      showAlert(errorData.message || `HTTP ${res.status}`, false);
-      setLoading(false);
-      return;
-    }
+const data = await res.json().catch(() => ({}));
+console.log("📦 RESPONSE DATA:", data);
 
-    const data = await res.json();
-    console.log("✅ SUCCESS DATA:", data);
+// ✅ Treat "success" message as success EVEN if status is bad
+if (!res.ok && !data.message?.toLowerCase().includes("success")) {
+  console.log("❌ ERROR DATA:", data);
+  showAlert(data.message || `HTTP ${res.status}`, false);
+  setLoading(false);
+  return;
+}
+
+console.log("✅ SUCCESS DATA:", data);
     
     const token = data.access_token || data.token;
     if (token) {
