@@ -8,8 +8,7 @@ export default function LoginPage() {
   const [isRegister, setIsRegister] = useState(false);
   const [role, setRole] = useState<"user" | "admin">("user");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [alert, setAlert] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const router = useRouter();
 
   const [name, setName] = useState("");
@@ -17,16 +16,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("123");
 
-  // ✅ Auto-clear alerts after 5 seconds
-  useEffect(() => {
-    if (success || error) {
-      const timer = setTimeout(() => {
-        setSuccess("");
-        setError("");
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [success, error]);
+
 
   const resetFields = () => {
     setName("");
@@ -34,29 +24,18 @@ export default function LoginPage() {
     setEmail("");
     setPassword("123");
     setRole("user");
-    setError("");
-    setSuccess("");
+    setAlert(null); 
   };
 
 const showAlert = (message: string, isSuccess: boolean) => {
-  console.log("🔔 SHOW ALERT:", { message, isSuccess, success: !!success, error: !!error });
-  
-  if (isSuccess) {
-    setError("");      // Clear error FIRST
-    setSuccess(message); // Then set success
-  } else {
-    setSuccess("");    // Clear success FIRST
-    setError(message); // Then set error
-  }
+  setAlert({ message, type: isSuccess ? 'success' : 'error' });
 };
 
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
   
-  console.log("🔥 START SUBMIT", { isRegister, username });
-  setError("");
-  setSuccess("");
-  setLoading(true);
+  setAlert(null);    // ✅ NEW
+  setLoading(true);  // ✅ Keep
 
   try {
     const body = isRegister
@@ -277,20 +256,16 @@ const handleSubmit = async (e: React.FormEvent) => {
           </div>
 
           {/* ✅ FIXED: Success Alert - GREEN */}
-          {success && (
-            <div className="p-6 bg-emerald-50 border-2 border-emerald-200 rounded-3xl text-emerald-700 text-lg font-semibold shadow-xl animate-pulse flex items-center space-x-3">
-              <span className="text-2xl">✅</span>
-              <span>{success}</span>
-            </div>
-          )}
-
-          {/* ❌ FIXED: Error Alert - RED */}
-          {error && (
-            <div className="p-6 bg-rose-50 border-2 border-rose-200 rounded-3xl text-rose-700 text-lg font-semibold shadow-xl animate-pulse flex items-center space-x-3">
-              <span className="text-2xl">❌</span>
-              <span>{error}</span>
-            </div>
-          )}
+        {alert && (
+  <div className={`p-6 rounded-3xl text-lg font-semibold shadow-xl animate-pulse flex items-center space-x-3 border-2 ${
+    alert.type === 'success' 
+      ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
+      : 'bg-rose-50 border-rose-200 text-rose-700'
+  }`}>
+    <span className="text-2xl">{alert.type === 'success' ? '✅' : '❌'}</span>
+    <span>{alert.message}</span>
+  </div>
+)}
 
           <button
             type="submit"
