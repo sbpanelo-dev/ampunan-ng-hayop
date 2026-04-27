@@ -38,106 +38,94 @@ export default function LoginPage() {
     setSuccess("");
   };
 
-  const showAlert = (message: string, isSuccess: boolean) => {
-    if (isSuccess) {
-      setSuccess(message);
-      setError("");
-    } else {
-      setError(message);
-      setSuccess("");
-    }
-  };
+const showAlert = (message: string, isSuccess: boolean) => {
+  console.log("🔔 SHOW ALERT:", { message, isSuccess, success: !!success, error: !!error });
+  
+  if (isSuccess) {
+    setError("");      // Clear error FIRST
+    setSuccess(message); // Then set success
+  } else {
+    setSuccess("");    // Clear success FIRST
+    setError(message); // Then set error
+  }
+};
 
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
   
-  // ✅ Clear states FIRST, then loading
+  console.log("🔥 START SUBMIT", { isRegister, username });
   setError("");
   setSuccess("");
   setLoading(true);
 
-    try {
-      const body = isRegister
-        ? {
-            name: name.trim(),
-            username: username.trim(),
-            email: email.trim(),
-            password: password.trim(),
-            role: role
-          }
-        : {
-            username: username.trim(),
-            password: password.trim()
-          };
+  try {
+    const body = isRegister
+      ? { name: name.trim(), username: username.trim(), email: email.trim(), password: password.trim(), role }
+      : { username: username.trim(), password: password.trim() };
 
-      const endpoint = isRegister ? 'register' : 'login';
-      const res = await fetch(
-        `https://streetpaws-4.onrender.com/auth/${endpoint}`,
-        {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          body: JSON.stringify(body)
-        }
-      );
+    const endpoint = isRegister ? 'register' : 'login';
+    console.log("📡 API CALL:", endpoint, body);
+    
+    const res = await fetch(`https://streetpaws-4.onrender.com/auth/${endpoint}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify(body)
+    });
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        showAlert(errorData.message || `HTTP ${res.status}`, false);
-        setLoading(false);
-        return;
-      }
+    console.log("📡 RESPONSE:", res.status, res.ok);
 
-      const data = await res.json();
-      
-      const token = data.access_token || data.token;
-      if (token) {
-        localStorage.setItem("token", token);
-        
-        const userData = {
-          username: data.user?.username || username.trim(),
-          role: data.user?.role || role || "User",
-          user_id: data.user?.user_id || data.user?.id
-        };
-        
-        localStorage.setItem("streetpaws_user", JSON.stringify(userData));
-        
-        console.log("✅ SAVED:", { token: token.slice(0, 20) + "...", user: userData });
-        
-        showAlert(`✅ Welcome ${userData.username}! (${userData.role})`, true);
-        setLoading(false); // ✅ Set loading false immediately
-        
-        // FIXED: Correct redirect logic
-        if (!isRegister) {
-          const savedUser = localStorage.getItem("streetpaws_user");
-          const currentUser = savedUser ? JSON.parse(savedUser) : userData;
-          // Admin goes to admin dashboard, user goes to user dashboard
-          if (currentUser.role?.toLowerCase().includes("admin")) {
-            router.push("/userdashboard");
-          } else {
-            router.push("/admindashboard");
-          }
-        } else {
-          setIsRegister(false);
-          resetFields();
-          showAlert("✅ Account created! Please sign in.", true);
-          setLoading(false); // ✅ Set loading false immediately
-        }
-        return;
-      }
-
-      showAlert(data.message || data.error || "Login failed", false);
-      setLoading(false); // ✅ Set loading false for non-token cases
-      
-    } catch (err: any) {
-      console.error("Error:", err);
-      showAlert("Network error", false);
-      setLoading(false); // ✅ Set loading false on error
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      console.log("❌ ERROR DATA:", errorData);
+      showAlert(errorData.message || `HTTP ${res.status}`, false);
+      setLoading(false);
+      return;
     }
-    // ✅ REMOVED finally block to prevent race condition
-  };
+
+    const data = await res.json();
+    console.log("✅ SUCCESS DATA:", data);
+    
+    const token = data.access_token || data.token;
+    if (token) {
+      localStorage.setItem("token", token);
+      const userData = {
+        username: data.user?.username || username.trim(),
+        role: data.user?.role || role || "User",
+        user_id: data.user?.user_id || data.user?.id
+      };
+      localStorage.setItem("streetpaws_user", JSON.stringify(userData));
+      
+      console.log("✅ SAVED TOKEN + USER");
+      showAlert(`✅ Welcome ${userData.username}! (${userData.role})`, true);
+      setLoading(false);
+      
+      if (!isRegister) {
+        const currentUser = JSON.parse(localStorage.getItem("streetpaws_user") || '{}');
+        if (currentUser.role?.toLowerCase().includes("admin")) {
+          router.push("/userdashboard");
+        } else {
+          router.push("/admindashboard");
+        }
+      } else {
+        setIsRegister(false);
+        resetFields();
+        console.log("🔄 REGISTER SUCCESS - showing alert");
+        showAlert("✅ Account created! Please sign in.", true);
+        setLoading(false);
+      }
+      return;
+    }
+
+    console.log("⚠️ NO TOKEN");
+    showAlert(data.message || data.error || "Login failed", false);
+    setLoading(false);
+    
+  } catch (err: any) {
+    console.error("💥 NETWORK ERROR:", err);
+    showAlert("Network error", false);
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center p-4">
