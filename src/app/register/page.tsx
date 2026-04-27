@@ -283,8 +283,8 @@ export default function LoginPage() {
 
           {/* ✅ FIXED: Error Alert - Red */}
           {error && (
-            <div className="p-6 green-50 border-2 border-green-200 rounded-3xl text-green-700 text-lg font-semibold shadow-xl animate-pulse flex items-center space-x-3">
-              <span className="text-2xl">✅</span>
+            <div className="p-6 rose-50 border-2 border-rose-200 rounded-3xl text-rose-700 text-lg font-semibold shadow-xl animate-pulse flex items-center space-x-3">
+              <span className="text-2xl">❌</span>
               <span>{error}</span>
             </div>
           )}
