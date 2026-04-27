@@ -24,7 +24,6 @@ export default function LoginPage() {
     setEmail("");
     setPassword("123");
     setRole("user");
-    setAlert(null); 
   };
 
 const showAlert = (message: string, isSuccess: boolean) => {
@@ -65,35 +64,35 @@ const handleSubmit = async (e: React.FormEvent) => {
     console.log("✅ SUCCESS DATA:", data);
     
     const token = data.access_token || data.token;
-if (token) {
-  localStorage.setItem("token", token);
-  const userData = {
-    username: data.user?.username || username.trim(),
-    role: data.user?.role || role || "User",
-    user_id: data.user?.user_id || data.user?.id
-  };
-  localStorage.setItem("streetpaws_user", JSON.stringify(userData));
-  
-  console.log("✅ SAVED TOKEN + USER");
-  
-  // ✅ FIXED: Single alert - conditional only
-  if (!isRegister) {
-    showAlert(`✅ Welcome ${userData.username}! (${userData.role})`, true);
-    const currentUser = JSON.parse(localStorage.getItem("streetpaws_user") || '{}');
-    if (currentUser.role?.toLowerCase().includes("admin")) {
-      router.push("/userdashboard");
-    } else {
-      router.push("/admindashboard");
-    }
+    if (token) {
+      localStorage.setItem("token", token);
+      const userData = {
+        username: data.user?.username || username.trim(),
+        role: data.user?.role || role || "User",
+        user_id: data.user?.user_id || data.user?.id
+      };
+      localStorage.setItem("streetpaws_user", JSON.stringify(userData));
+      
+      console.log("✅ SAVED TOKEN + USER");
+      showAlert(`✅ Welcome ${userData.username}! (${userData.role})`, true);
+      setLoading(false);
+      
+if (!isRegister) {
+  const currentUser = JSON.parse(localStorage.getItem("streetpaws_user") || '{}');
+
+  if (currentUser.role?.toLowerCase().includes("admin")) {
+    router.push("/userdashboard");
   } else {
-    setIsRegister(false);
-    resetFields();
-    console.log("🔄 REGISTER SUCCESS - showing alert");
-    showAlert("✅ Account created! Please sign in.", true);  // ✅ ONLY ONE CALL
+    router.push("/admindashboard");
   }
-  setLoading(false);  // ✅ Move outside
-  return;
+} else {
+  resetFields();
+  setIsRegister(false);
+  setLoading(false);
+  showAlert("Account created! Please sign in.", true);
 }
+      return;
+    }
 
     console.log("⚠️ NO TOKEN");
     showAlert(data.message || data.error || "Login failed", false);
@@ -257,10 +256,14 @@ if (token) {
 
           {/* ✅ FIXED: Success Alert - GREEN */}
 {alert && (
-  <div className={`p-6 rounded-3xl ...`}>
-    <span>🔥DEBUG-{alert.type}-🔥 | </span>  {/* ← ADD THIS */}
-    <span>{alert.type === 'success' ? '✅' : '❌'}</span>
-    <span>{alert.message}</span>
+  <div
+    className={`p-4 rounded-2xl text-white font-semibold shadow-lg ${
+      alert.type === "success"
+        ? "bg-green-500"
+        : "bg-red-500"
+    }`}
+  >
+    {alert.type === "success" ? "✅" : "❌"} {alert.message}
   </div>
 )}
 
