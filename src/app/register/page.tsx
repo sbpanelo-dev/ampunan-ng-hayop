@@ -65,35 +65,35 @@ const handleSubmit = async (e: React.FormEvent) => {
     console.log("✅ SUCCESS DATA:", data);
     
     const token = data.access_token || data.token;
-    if (token) {
-      localStorage.setItem("token", token);
-      const userData = {
-        username: data.user?.username || username.trim(),
-        role: data.user?.role || role || "User",
-        user_id: data.user?.user_id || data.user?.id
-      };
-      localStorage.setItem("streetpaws_user", JSON.stringify(userData));
-      
-      console.log("✅ SAVED TOKEN + USER");
-      showAlert(`✅ Welcome ${userData.username}! (${userData.role})`, true);
-      setLoading(false);
-      
-      if (!isRegister) {
-        const currentUser = JSON.parse(localStorage.getItem("streetpaws_user") || '{}');
-        if (currentUser.role?.toLowerCase().includes("admin")) {
-          router.push("/userdashboard");
-        } else {
-          router.push("/admindashboard");
-        }
-      } else {
-        setIsRegister(false);
-        resetFields();
-        console.log("🔄 REGISTER SUCCESS - showing alert");
-        showAlert("✅ Account created! Please sign in.", true);
-        setLoading(false);
-      }
-      return;
+if (token) {
+  localStorage.setItem("token", token);
+  const userData = {
+    username: data.user?.username || username.trim(),
+    role: data.user?.role || role || "User",
+    user_id: data.user?.user_id || data.user?.id
+  };
+  localStorage.setItem("streetpaws_user", JSON.stringify(userData));
+  
+  console.log("✅ SAVED TOKEN + USER");
+  
+  // ✅ FIXED: Single alert - conditional only
+  if (!isRegister) {
+    showAlert(`✅ Welcome ${userData.username}! (${userData.role})`, true);
+    const currentUser = JSON.parse(localStorage.getItem("streetpaws_user") || '{}');
+    if (currentUser.role?.toLowerCase().includes("admin")) {
+      router.push("/userdashboard");
+    } else {
+      router.push("/admindashboard");
     }
+  } else {
+    setIsRegister(false);
+    resetFields();
+    console.log("🔄 REGISTER SUCCESS - showing alert");
+    showAlert("✅ Account created! Please sign in.", true);  // ✅ ONLY ONE CALL
+  }
+  setLoading(false);  // ✅ Move outside
+  return;
+}
 
     console.log("⚠️ NO TOKEN");
     showAlert(data.message || data.error || "Login failed", false);
