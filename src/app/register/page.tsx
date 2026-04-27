@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react"; // ✅ Added useEffect
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -16,6 +16,17 @@ export default function LoginPage() {
   const [username, setUsername] = useState("admin3");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("123");
+
+  // ✅ Auto-clear alerts after 5 seconds
+  useEffect(() => {
+    if (success || error) {
+      const timer = setTimeout(() => {
+        setSuccess("");
+        setError("");
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [success, error]);
 
   const resetFields = () => {
     setName("");
@@ -94,6 +105,7 @@ export default function LoginPage() {
         console.log("✅ SAVED:", { token: token.slice(0, 20) + "...", user: userData });
         
         showAlert(`✅ Welcome ${userData.username}! (${userData.role})`, true);
+        setLoading(false); // ✅ Set loading false immediately
         
         // FIXED: Correct redirect logic
         if (!isRegister) {
@@ -101,30 +113,31 @@ export default function LoginPage() {
           const currentUser = savedUser ? JSON.parse(savedUser) : userData;
           // Admin goes to admin dashboard, user goes to user dashboard
           if (currentUser.role?.toLowerCase().includes("admin")) {
-            router.push("/userdashboard"); // FIXED: Admin to admin dashboard
+            router.push("/userdashboard");
           } else {
-            router.push("/admindashboard");   // FIXED: User to user dashboard
+            router.push("/admindashboard");
           }
         } else {
           setIsRegister(false);
           resetFields();
           showAlert("✅ Account created! Please sign in.", true);
+          setLoading(false); // ✅ Set loading false immediately
         }
         return;
       }
 
       showAlert(data.message || data.error || "Login failed", false);
+      setLoading(false); // ✅ Set loading false for non-token cases
       
     } catch (err: any) {
       console.error("Error:", err);
       showAlert("Network error", false);
-    } finally {
-      setLoading(false);
+      setLoading(false); // ✅ Set loading false on error
     }
+    // ✅ REMOVED finally block to prevent race condition
   };
 
   return (
-    
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl bg-white rounded-3xl shadow-3xl p-10 lg:p-12 space-y-8 border border-emerald-100/50 backdrop-blur-xl">
         
@@ -273,18 +286,18 @@ export default function LoginPage() {
             />
           </div>
 
-          {/* ✅ FIXED: Success Alert - Green */}
+          {/* ✅ FIXED: Success Alert - GREEN */}
           {success && (
-            <div className="p-6 bg-rose-50 border-2 border-rose-200 rounded-3xl text-rose-700 text-lg font-semibold shadow-xl animate-pulse flex items-center space-x-3">
-              <span className="text-2xl">❌</span>
+            <div className="p-6 bg-emerald-50 border-2 border-emerald-200 rounded-3xl text-emerald-700 text-lg font-semibold shadow-xl animate-pulse flex items-center space-x-3">
+              <span className="text-2xl">✅</span>
               <span>{success}</span>
             </div>
           )}
 
-          {/* ✅ FIXED: Error Alert - Red */}
+          {/* ❌ FIXED: Error Alert - RED */}
           {error && (
-            <div className="p-6 green-50 border-2 border-green-200 rounded-3xl text-green-700 text-lg font-semibold shadow-xl animate-pulse flex items-center space-x-3">
-              <span className="text-2xl">✅</span>
+            <div className="p-6 bg-rose-50 border-2 border-rose-200 rounded-3xl text-rose-700 text-lg font-semibold shadow-xl animate-pulse flex items-center space-x-3">
+              <span className="text-2xl">❌</span>
               <span>{error}</span>
             </div>
           )}
