@@ -136,7 +136,7 @@ console.log("✅ SAVED:", {
 });
 
 showAlert(
-  `✅ Welcome ${userData.username}! (${userData.role})`,
+  `Welcome ${userData.username}! (${userData.role})`,
   true
 );
 
