@@ -87,11 +87,20 @@ export default function LoginPage() {
       }
 
 
-      const data = await res.json();
-     
-      const token = data.access_token || data.token;
-      if (token) {
-        localStorage.setItem("token", token);
+const data = await res.json();
+
+// If login failed (no token)
+if (!data.access_token && !data.token) {
+  showAlert(
+    data.message || data.error || "Invalid credentials",
+    false
+  );
+  setLoading(false);
+  return;
+}
+
+const token = data.access_token || data.token;
+if (token) {
        
         const userData = {
           username: data.user?.username || username.trim(),
@@ -295,8 +304,8 @@ export default function LoginPage() {
 
           {/* ✅ FIXED: Success Alert - Green */}
           {success && (
-            <div className="p-6 bg-rose-50 border-2 border-rose-200 rounded-3xl text-rose-700 text-lg font-semibold shadow-xl animate-pulse flex items-center space-x-3">
-              <span className="text-2xl">❌</span>
+            <div className="p-6 bg-emerald-50 border-2 border-emerald-200 rounded-3xl text-emerald-700 text-lg font-semibold shadow-xl animate-pulse flex items-center space-x-3">
+              <span className="text-2xl">✅</span>
               <span>{success}</span>
             </div>
           )}
@@ -304,8 +313,8 @@ export default function LoginPage() {
 
           {/* ✅ FIXED: Error Alert - Red */}
           {error && (
-            <div className="p-6 green-50 border-2 border-green-200 rounded-3xl text-green-700 text-lg font-semibold shadow-xl animate-pulse flex items-center space-x-3">
-              <span className="text-2xl">✅</span>
+            <div className="p-6 bg-rose-50 border-2 border-rose-200 rounded-3xl text-rose-700 text-lg font-semibold shadow-xl animate-pulse flex items-center space-x-3">
+              <span className="text-2xl">❌</span>
               <span>{error}</span>
             </div>
           )}
