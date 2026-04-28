@@ -142,9 +142,9 @@ showAlert(
 
 // ✅ FIXED Redirect Logic
 if (userData.role?.toLowerCase().includes("admin")) {
-  router.push("/admindashboard");
-} else {
   router.push("/userdashboard");
+} else {
+  router.push("/admindashboard");
 }
 
 return;
