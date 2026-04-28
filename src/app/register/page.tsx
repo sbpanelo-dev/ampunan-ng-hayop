@@ -89,8 +89,25 @@ export default function LoginPage() {
 
 const data = await res.json();
 
-// If login failed (no token)
-if (!data.access_token && !data.token) {
+// 🟢 HANDLE REGISTER FIRST
+if (isRegister) {
+  showAlert(
+    data.message || "✅ Account created! Please sign in.",
+    true
+  );
+
+  setIsRegister(false);
+  resetFields();
+  setLoading(false);
+  return;
+}
+
+// 🔐 LOGIN LOGIC
+
+const token = data.access_token || data.token;
+
+// ❌ Login failed
+if (!token) {
   showAlert(
     data.message || data.error || "Invalid credentials",
     false
@@ -99,48 +116,45 @@ if (!data.access_token && !data.token) {
   return;
 }
 
-const token = data.access_token || data.token;
-if (token) {
-       
-        const userData = {
-          username: data.user?.username || username.trim(),
-          role: data.user?.role || role || "User",
-          user_id: data.user?.user_id || data.user?.id
-        };
-       
-        localStorage.setItem("streetpaws_user", JSON.stringify(userData));
-       
-        console.log("✅ SAVED:", { token: token.slice(0, 20) + "...", user: userData });
-       
-        showAlert(`✅ Welcome ${userData.username}! (${userData.role})`, true);
-       
-        // FIXED: Correct redirect logic
-        if (!isRegister) {
-          const savedUser = localStorage.getItem("streetpaws_user");
-          const currentUser = savedUser ? JSON.parse(savedUser) : userData;
-          // Admin goes to admin dashboard, user goes to user dashboard
-          if (currentUser.role?.toLowerCase().includes("admin")) {
-            router.push("/userdashboard"); // FIXED: Admin to admin dashboard
-          } else {
-            router.push("/admindashboard");   // FIXED: User to user dashboard
-          }
-        } else {
-          setIsRegister(false);
-          resetFields();
-          showAlert("✅ Account created! Please sign in.", true);
-        }
-        return;
-      }
+// ✅ Login success
+localStorage.setItem("token", token);
 
+const userData = {
+  username: data.user?.username || username.trim(),
+  role: data.user?.role || role || "User",
+  user_id: data.user?.user_id || data.user?.id
+};
 
-      showAlert(data.message || data.error || "Login failed", false);
-     
-    } catch (err: any) {
-      console.error("Error:", err);
-      showAlert("Network error", false);
-    } finally {
-      setLoading(false);
-    }
+localStorage.setItem(
+  "streetpaws_user",
+  JSON.stringify(userData)
+);
+
+console.log("✅ SAVED:", {
+  token: token.slice(0, 20) + "...",
+  user: userData
+});
+
+showAlert(
+  `✅ Welcome ${userData.username}! (${userData.role})`,
+  true
+);
+
+// ✅ FIXED Redirect Logic
+if (userData.role?.toLowerCase().includes("admin")) {
+  router.push("/admindashboard");
+} else {
+  router.push("/userdashboard");
+}
+
+return;
+
+} catch (err: any) {
+  console.error("Error:", err);
+  showAlert("Network error", false);
+} finally {
+  setLoading(false);
+}
   };
 
 
