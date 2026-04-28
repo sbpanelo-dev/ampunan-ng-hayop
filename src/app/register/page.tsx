@@ -92,12 +92,16 @@ const data = await res.json();
 // 🟢 HANDLE REGISTER FIRST
 if (isRegister) {
   showAlert(
-    data.message || "✅ Account created! Please sign in.",
+    data.message || "User registered successfully!",
     true
   );
 
-  setIsRegister(false);
-  resetFields();
+  // ✅ Wait before switching to Sign In
+  setTimeout(() => {
+    setIsRegister(false);
+    resetFields();
+  }, 2000); // 2 seconds delay
+
   setLoading(false);
   return;
 }
