@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Logo from '../../components/Logo';
+import Logo from '@/components/ui/Logo';
 
 export default function LoginPage() {
   const [isRegister, setIsRegister] = useState<boolean>(true);
