@@ -150,66 +150,72 @@ export default function UserDashboardPage() {
   };
 
   // Load animals ✅ FIXED image_url logic
-  const loadAnimals = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("token")!;
+const loadAnimals = async () => {
+  try {
+    const token = localStorage.getItem("token")!;
 
-      const res = await fetch(`${API_URL}/animals`, {
+    const res = await fetch(`${API_URL}/animals?ts=${Date.now()}`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+
+    let animalsList: any[] = [];
+
+    if (res.ok) {
+      const data = await res.json();
+      console.log("🔥 API DATA:", data);
+      animalsList = Array.isArray(data) ? data : [data];
+    } else {
+      const fallbackRes = await fetch(`${API_URL}/animals/available`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
 
-      let animalsList: any[] = [];
+      if (fallbackRes.ok) {
+        const data = await fallbackRes.json();
+        animalsList = data.animals || [];
+      }
+    }
 
-      if (res.ok) {
-        const data = await res.json();
-        animalsList = Array.isArray(data) ? data : [data];
-      } else {
-        const fallbackRes = await fetch(`${API_URL}/animals/available`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        if (fallbackRes.ok) {
-          const data = await fallbackRes.json();
-          animalsList = data.animals || [];
+    // ✅ FIXED: Smart Image URL Logic
+    const normalized = animalsList.map((a: any) => {
+      let imageUrl: string | undefined = undefined;
+      
+      if (a.photo) {
+        console.log("📸 PHOTO PATH:", a.photo); // DEBUG
+        
+        if (a.photo.startsWith('http://') || a.photo.startsWith('https://')) {
+          // Full URL
+          imageUrl = a.photo;
+        } else if (a.photo.startsWith('/uploads/') || a.photo.startsWith('/public/')) {
+          // Relative path (Next.js public folder)
+          imageUrl = a.photo;
+        } else {
+          // Backend relative path
+          imageUrl = `${API_URL}${a.photo.startsWith('/') ? '' : '/'}${a.photo}`;
         }
       }
 
-      // ✅ FIXED: Proper image URL handling
-      const normalized = animalsList.map((a: any) => {
-        let imageUrl: string | undefined;
-        if (a.photo) {
-          if (a.photo.startsWith('http')) {
-            imageUrl = a.photo;
-          } else if (a.photo.startsWith('/uploads/')) {
-            imageUrl = a.photo; // Next.js serves from public/
-          } else {
-            imageUrl = `${API_URL}${a.photo}`;
-          }
-        }
+      return {
+        id: a.animal_id || a.id,
+        name: a.name || "Unknown",
+        type: a.type || "Dog",
+        status: a.status || "Available",
+        breed: a.breed || "",
+        age_months: parseInt(a.age_months) || 0,
+        sex: a.sex || "Unknown",
+        description: a.description || "",
+        photo: a.photo,
+        image_url: imageUrl
+      };
+    });
 
-        return {
-          id: a.animal_id || a.id,
-          animal_id: a.animal_id,
-          name: a.name,
-          type: a.type,
-          status: a.status,
-          breed: a.breed,
-          age_months: parseInt(a.age_months) || 0,
-          sex: a.sex || "Unknown",
-          description: a.description,
-          photo: a.photo,
-          image_url: imageUrl
-        };
-      });
+    console.log("✅ NORMALIZED ANIMALS:", normalized); // DEBUG
+    setAnimals(normalized);
+    calculateStats(normalized);
 
-      setAnimals(normalized);
-      calculateStats(normalized);
-    } catch (error) {
-      console.error("Load error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  } catch (error) {
+    console.error("❌ Load error:", error);
+  }
+};
 
   // ✅ FIXED: Stats calculation
   const calculateStats = (animalsList: Animal[]) => {
@@ -517,13 +523,19 @@ const AnimalCard = ({ animal, onAdopt }: { animal: Animal; onAdopt: () => void }
   <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all overflow-hidden border-2 border-emerald-100 hover:border-emerald-200 group">
     <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden relative">
       {animal.image_url ? (
-        <img
-          src={animal.image_url}
+        <img 
+          src={animal.image_url} 
           alt={animal.name}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           onError={(e) => {
-            (e.target as HTMLImageElement).style.display = "none";
-            (e.target as HTMLImageElement).outerHTML = '<div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-400 to-teal-400"><span class="text-4xl text-white drop-shadow-lg">🐾</span></div>';
+            console.error("❌ Image failed:", animal.image_url);
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+            target.parentElement!.innerHTML = `
+              <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-400 to-teal-400">
+                <span class="text-4xl text-white drop-shadow-lg">🐾</span>
+              </div>
+            `;
           }}
         />
       ) : (
