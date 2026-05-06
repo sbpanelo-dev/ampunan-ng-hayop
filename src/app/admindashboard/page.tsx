@@ -275,7 +275,7 @@ const normalized = animalsList.map((a: any) => {
       });
 
       if (response.ok) {
-        addNotification("🎉 Adoption request submitted successfully!", "success");
+        addNotification("Adoption request submitted successfully!", "success");
         setShowAdoptionModal(false);
         setSelectedAnimal(null);
         handleClearForm();
@@ -431,7 +431,7 @@ if (!user) return <div className="p-8 text-center">Loading...</div>;
         <StatCard title="My Requests" value={stats.pendingRequests} icon="📋" color="orange" />
       </div>
 
-      {/* Animals Grid */}
+  {/* Animals Grid */}
       <div className="bg-white/70 backdrop-blur p-8 rounded-2xl shadow-xl">
         <h2 className="text-2xl font-bold text-gray-800 mb-8">
           Available Animals ({animals.length})
@@ -444,14 +444,17 @@ if (!user) return <div className="p-8 text-center">Loading...</div>;
             <p className="text-sm">Check back soon for new furry friends!</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {animals.map((animal) => (
-              <AnimalCard 
-                key={animal.id}
-                animal={animal}
-                onAdopt={() => handleAdoptClick(animal)}
-              />
-            ))}
+<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 max-w-5xl mx-auto">
+{animals.map((animal) => {
+              const animalId = animal.animal_id;
+              return (
+                <AnimalCard 
+                  key={animalId}
+                  animal={animal}
+                  onAdopt={() => handleAdoptClick(animal)}
+                />
+              );
+            })}
           </div>
         )}
       </div>
