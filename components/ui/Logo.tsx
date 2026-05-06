@@ -16,7 +16,7 @@ export default function Logo({ showText = true, size = "md", className = "" }: L
   return (
     <div className={`flex items-center gap-3 ${className}`}>
       <Image
-        src="/public/logo.png"
+        src="/logo/logo.png"
         alt="Street Paws Naga Logo"
         width={64}
         height={64}
