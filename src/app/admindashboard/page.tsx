@@ -152,6 +152,7 @@ export default function UserDashboardPage() {
   // Load animals ✅ FIXED image_url logic
 const loadAnimals = async () => {
   try {
+    setLoading(true); // ✅ ADD THIS
     const token = localStorage.getItem("token")!;
 
     const res = await fetch(`${API_URL}/animals?ts=${Date.now()}`, {
@@ -175,7 +176,7 @@ const loadAnimals = async () => {
       }
     }
 
-    // ✅ FIXED: Smart Image URL Logic
+    // ✅ FIXED: Smart Image URL Logic - MATCHES ADMIN DASHBOARD
     const normalized = animalsList.map((a: any) => {
       let imageUrl: string | undefined = undefined;
       
@@ -187,15 +188,16 @@ const loadAnimals = async () => {
           imageUrl = a.photo;
         } else if (a.photo.startsWith('/uploads/') || a.photo.startsWith('/public/')) {
           // Relative path (Next.js public folder)
-          imageUrl = a.photo;
+          imageUrl = `${window.location.origin}${a.photo}`;
         } else {
-          // Backend relative path
+          // Backend relative path - MOST COMMON
           imageUrl = `${API_URL}${a.photo.startsWith('/') ? '' : '/'}${a.photo}`;
         }
       }
 
       return {
         id: a.animal_id || a.id,
+        animal_id: a.animal_id, // ✅ ADD for adoption form
         name: a.name || "Unknown",
         type: a.type || "Dog",
         status: a.status || "Available",
@@ -203,8 +205,8 @@ const loadAnimals = async () => {
         age_months: parseInt(a.age_months) || 0,
         sex: a.sex || "Unknown",
         description: a.description || "",
-        photo: a.photo,
-        image_url: imageUrl
+        photo: a.photo,        // raw backend path
+        image_url: imageUrl    // full display URL
       };
     });
 
@@ -214,6 +216,8 @@ const loadAnimals = async () => {
 
   } catch (error) {
     console.error("❌ Load error:", error);
+  } finally {
+    setLoading(false); // ✅ CRITICAL FIX - THIS WAS MISSING
   }
 };
 
@@ -318,9 +322,10 @@ const loadAnimals = async () => {
       setRequestsLoading(false);
     }
   };
-
-  if (!user) return <div className="p-8 text-center">Loading...</div>;
-  if (loading) return <div className="p-8 text-center">Loading animals...</div>;
+  
+if (!user) return <div className="p-8 text-center">Loading...</div>;
+// ✅ FIXED: Remove this line - let main content handle loading states
+// if (loading) return <div className="p-8 text-center">Loading animals...</div>;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 p-6 relative">
