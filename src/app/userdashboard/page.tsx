@@ -826,7 +826,20 @@ const handleLogout = () => {
 
         <Input label="Breed" value={newAnimal.breed} onChange={(v: any) => setNewAnimal({...newAnimal, breed: v})} />
         <Input label="Age (months)" type="number" value={newAnimal.age_months} onChange={(v: any) => setNewAnimal({...newAnimal, age_months: v})} />
-        <Input label="Sex" value={newAnimal.sex} onChange={(v: any) => setNewAnimal({...newAnimal, sex: v})} />
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">Sex *</label>
+  <select
+    value={newAnimal.sex}
+    onChange={(e) => setNewAnimal({...newAnimal, sex: e.target.value})}
+    className="w-full p-3 border border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all"
+    disabled={loading}
+    required
+  >
+    <option value="">Select sex...</option>
+    <option value="Male">♂️ Male</option>
+    <option value="Female">♀️ Female</option>
+  </select>
+</div>
         <Textarea label="Description" value={newAnimal.description} onChange={(v: any) => setNewAnimal({...newAnimal, description: v})} />
       </div>
 {/* 🖼️ Enhanced Animal Image Upload Section */}
