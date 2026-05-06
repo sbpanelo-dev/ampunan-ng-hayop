@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Logo from '@/components/ui/Logo';
 const API_URL = "https://streetpaws-4.onrender.com";
 
 interface User {
@@ -485,13 +486,16 @@ const handleLogout = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 p-6">
-      {/* Header */}
+{/* Header */}
       <div className="bg-white/80 backdrop-blur p-6 rounded-2xl shadow-lg mb-8 flex justify-between items-center">
-        <div>
+        <Logo showText={true} size="md" />
+<div className="flex-1 text-center">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-            🐾 Street Paws Admin
+            Street Paws Admin Dashboard
           </h1>
-          <p>Welcome <strong>{user.username}</strong> ({user.role})</p>
+          <p className="text-gray-700">
+            Welcome <strong>{user.username}</strong> ({user.role})
+          </p>
         </div>
    <div className="flex gap-3">
   <button 
