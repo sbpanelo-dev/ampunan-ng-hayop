@@ -71,7 +71,23 @@ export default function DashboardPage() {
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
+// ✏️ Edit states
+const [showEditModal, setShowEditModal] = useState(false);
 
+const [editAnimal, setEditAnimal] = useState({
+  id: 0,
+  name: "",
+  type: "",
+  breed: "",
+  age_months: "",
+  sex: "",
+  description: "",
+  status: "Available",
+  image: null as File | null,
+  currentImage: ""
+});
+
+const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
   // 🔐 Auth
   useEffect(() => {
     const savedUser = localStorage.getItem("streetpaws_user");
@@ -472,7 +488,114 @@ const clearArchive = () => {
     localStorage.removeItem("streetpaws_archive");
   }
 };
+const openEditModal = (animal: any) => {
+  setEditAnimal({
+    id: animal.id || animal.animal_id,
+    name: animal.name || "",
+    type: animal.type || "",
+    breed: animal.breed || "",
+    age_months: animal.age_months?.toString() || "",
+    sex: animal.sex || "",
+    description: animal.description || "",
+    status: animal.status || "Available",
+    image: null,
+    currentImage: animal.image_url || ""
+  });
 
+  setEditImagePreview(animal.image_url || null);
+  setShowEditModal(true);
+};
+const handleEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+
+  if (file) {
+    setEditAnimal(prev => ({
+      ...prev,
+      image: file
+    }));
+
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      setEditImagePreview(e.target?.result as string);
+    };
+
+    reader.readAsDataURL(file);
+  }
+};
+const handleEditAnimal = async () => {
+
+  try {
+
+    setLoading(true);
+
+    const token = localStorage.getItem("token")!;
+
+    let photoPath = editAnimal.currentImage;
+
+    // Upload new image if changed
+    if (editAnimal.image) {
+
+      const formData = new FormData();
+      formData.append("image", editAnimal.image);
+
+      const uploadRes = await fetch(`${API_URL}/animals/upload`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const uploadData = await uploadRes.json();
+
+      if (!uploadRes.ok) {
+        throw new Error("Image upload failed");
+      }
+
+      photoPath = uploadData.photo;
+    }
+
+    // Update animal
+    const response = await fetch(`${API_URL}/animals/${editAnimal.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        name: editAnimal.name,
+        type: editAnimal.type,
+        breed: editAnimal.breed,
+        age_months: parseInt(editAnimal.age_months) || 0,
+        sex: editAnimal.sex,
+        description: editAnimal.description,
+        status: editAnimal.status,
+        photo: photoPath
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to update animal");
+    }
+
+    alert("✅ Animal updated successfully!");
+
+    setShowEditModal(false);
+
+    loadAnimals();
+
+  } catch (error: any) {
+
+    console.error(error);
+    alert(error.message);
+
+  } finally {
+
+    setLoading(false);
+
+  }
+};
 const handleLogout = () => {
   localStorage.clear();
   router.push("/register");
@@ -597,6 +720,12 @@ const handleLogout = () => {
                           <option value="Fostered">Fostered</option>
                           <option value="Adopted">Adopted</option>
                         </select>
+                        <button
+  onClick={() => openEditModal(animal)}
+  className="bg-blue-500 text-white px-3 py-1 rounded font-bold text-sm hover:bg-blue-600"
+>
+  ✏️
+</button>
                         <button
                           onClick={() => handleDeleteAnimal(id)}
                           disabled={deleteLoading[id]}
@@ -810,7 +939,125 @@ const handleLogout = () => {
     setNewAnimal({ ...newAnimal, name: value })
   } 
 />
-        
+    {/* ✏️ Edit Modal */}
+{showEditModal && (
+  <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+    <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-auto">
+
+      <h2 className="text-2xl font-bold mb-6 text-blue-700">
+        ✏️ Edit Animal
+      </h2>
+
+      <div className="space-y-4">
+
+        <Input
+          label="Name"
+          value={editAnimal.name}
+          onChange={(v: string) =>
+            setEditAnimal({ ...editAnimal, name: v })
+          }
+        />
+
+        <Input
+          label="Breed"
+          value={editAnimal.breed}
+          onChange={(v: string) =>
+            setEditAnimal({ ...editAnimal, breed: v })
+          }
+        />
+
+        <Input
+          label="Age (months)"
+          type="number"
+          value={editAnimal.age_months}
+          onChange={(v: string) =>
+            setEditAnimal({ ...editAnimal, age_months: v })
+          }
+        />
+
+        {/* Type */}
+        <select
+          value={editAnimal.type}
+          onChange={(e) =>
+            setEditAnimal({ ...editAnimal, type: e.target.value })
+          }
+          className="w-full p-3 border rounded-xl"
+        >
+          <option value="Dog">Dog</option>
+          <option value="Cat">Cat</option>
+          <option value="Other">Other</option>
+        </select>
+
+        {/* Sex */}
+        <select
+          value={editAnimal.sex}
+          onChange={(e) =>
+            setEditAnimal({ ...editAnimal, sex: e.target.value })
+          }
+          className="w-full p-3 border rounded-xl"
+        >
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
+
+        {/* Status */}
+        <select
+          value={editAnimal.status}
+          onChange={(e) =>
+            setEditAnimal({ ...editAnimal, status: e.target.value })
+          }
+          className="w-full p-3 border rounded-xl"
+        >
+          <option value="Available">Available</option>
+          <option value="Fostered">Fostered</option>
+          <option value="Adopted">Adopted</option>
+        </select>
+
+        <Textarea
+          label="Description"
+          value={editAnimal.description}
+          onChange={(v: string) =>
+            setEditAnimal({ ...editAnimal, description: v })
+          }
+        />
+
+        {/* Image */}
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleEditImageChange}
+          className="w-full"
+        />
+
+        {editImagePreview && (
+          <img
+            src={editImagePreview}
+            alt="Preview"
+            className="w-40 h-40 object-cover rounded-xl mx-auto"
+          />
+        )}
+      </div>
+
+      <div className="flex gap-4 mt-8">
+
+        <button
+          onClick={() => setShowEditModal(false)}
+          className="flex-1 border py-3 rounded-xl"
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={handleEditAnimal}
+          className="flex-1 bg-blue-500 text-white py-3 rounded-xl font-bold"
+        >
+          💾 Save Changes
+        </button>
+
+      </div>
+    </div>
+  </div>
+)}    
         {/* ✅ FIXED: Type Dropdown - prevents validation errors */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Type *</label>
